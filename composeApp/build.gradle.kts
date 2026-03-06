@@ -1,10 +1,12 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.buildKonfig)
 }
 
 kotlin {
@@ -47,15 +49,37 @@ kotlin {
 compose.desktop {
     application {
         mainClass = "com.owl.minerva.fbu.MainKt"
-        jvmArgs += listOf(
-            "-DisDevelopment=true",
-            "--enable-native-access=ALL-UNNAMED",
-        )
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.owl.minerva.fbu"
             packageVersion = "1.0.0"
         }
+    }
+}
+
+val applicationProperties = Properties()
+val applicationPropertiesFile = project.rootProject.file("local.properties")
+if (applicationPropertiesFile.exists()) {
+    applicationPropertiesFile.inputStream().use { inputStream ->
+        applicationProperties.load(inputStream)
+    }
+}
+
+buildkonfig {
+    packageName = "com.owl.minerva.fbu.cores.configs"
+    objectName = "AppConfig"
+
+    defaultConfigs {
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "APP_NAME",
+            applicationProperties.getProperty("app.name", "FBU")
+        )
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "APP_ENVIRONMENT",
+            applicationProperties.getProperty("app.environment", "production")
+        )
     }
 }

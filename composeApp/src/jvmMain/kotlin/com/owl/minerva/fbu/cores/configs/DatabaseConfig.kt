@@ -5,9 +5,9 @@ import java.io.File
 
 object DatabaseConfig {
     fun initializeConnection(): Database {
-        val isDevelopmentMode = System.getProperty("isDevelopment") == "true"
+        val isDevelopmentMode: Boolean = AppConfig.APP_ENVIRONMENT == "development"
 
-        val userHomeDirectory = if (isDevelopmentMode) {
+        val userHomeDirectory: String = if (isDevelopmentMode) {
             System.getProperty("user.dir")
         } else {
             System.getProperty("user.home")
