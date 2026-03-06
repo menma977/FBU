@@ -1,16 +1,28 @@
+# --- Project Specific (Minerva FBU) ---
+# Database SQLite dan file journalnya
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# Folder sandbox/profile browser (Data sensitif!)
+.fbu/
+**/profile_*/
+
+# --- Kotlin & Gradle (User's list merged) ---
+.kotlin/
+.gradle/
+build/
+/*/build/
+/composeApp/build/
+
 # Compiled class file
 *.class
 
 # Log file
 *.log
 
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
+# Package Files
 *.jar
 *.war
 *.nar
@@ -19,9 +31,20 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# virtual machine crash logs
 hs_err_pid*
 replay_pid*
 
-# Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
-.kotlin/
+# --- IDE (IntelliJ / Android Studio) ---
+.idea/
+*.iml
+*.iws
+local.properties
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+
+# --- Others ---
+*.ctxt
+.mtj.tmp/
