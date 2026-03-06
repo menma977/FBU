@@ -4,6 +4,8 @@ import com.owl.minerva.fbu.app.entities.AccountEntity
 import com.owl.minerva.fbu.app.entities.BrowserEntity
 import com.owl.minerva.fbu.app.models.Account
 import com.owl.minerva.fbu.cores.interfaces.RepositoryInterface
+import com.owl.minerva.fbu.migrations.AccountMigration
+import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class AccountRepository : RepositoryInterface<Account> {
@@ -25,14 +27,13 @@ class AccountRepository : RepositoryInterface<Account> {
     }
 
     override suspend fun insert(model: Account): Long = newSuspendedTransaction {
-        val browserReference = BrowserEntity.findById(model.browserProfileId) ?: throw Exception("Browser Profile not found ${model.browserProfileId}")
-
-        AccountEntity.new {
-            browser = browserReference
-            label = model.label
-            username = model.username
-            password = model.password
-        }.id.value
+        val generatedId = AccountMigration.insertAndGetId {
+            it[browserProfileId] = model.browserProfileId
+            it[label] = model.label
+            it[username] = model.username
+            it[password] = model.password
+        }
+        generatedId.value
     }
 
     override suspend fun update(id: Long, model: Account): Boolean = newSuspendedTransaction {

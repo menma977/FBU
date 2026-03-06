@@ -8,14 +8,16 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.owl.minerva.fbu.app.repositories.AccountRepository
 import com.owl.minerva.fbu.app.repositories.BrowserRepository
 import com.owl.minerva.fbu.app.services.AccountService
 import com.owl.minerva.fbu.app.services.BrowserService
+import com.owl.minerva.fbu.app.view.models.BrowserViewModel
 import com.owl.minerva.fbu.app.view.models.DashboardViewModel
 import com.owl.minerva.fbu.app.view.screens.DashboardScreen
+import com.owl.minerva.fbu.app.view.screens.browser.BrowserScreen
+import com.owl.minerva.fbu.app.view.theme.FBUTheme
 
 @Composable
 fun App() {
@@ -24,17 +26,18 @@ fun App() {
     val browserService = remember { BrowserService(browserRepo) }
     val accountService = remember { AccountService(accountRepo, browserService) }
     val dashboardViewModel = remember { DashboardViewModel(browserService, accountService) }
+    val browserViewModel = remember { BrowserViewModel(browserService) }
 
     var currentScreen by remember { mutableStateOf("dashboard") }
 
-    MaterialTheme {
+    FBUTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = Color(0XFF1e222a)
+            color = MaterialTheme.colorScheme.background
         ) {
             Row(modifier = Modifier.fillMaxSize()) {
                 NavigationRail(
-                    containerColor = Color(0XFF292e36),
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.fillMaxHeight().width(80.dp)
                 ) {
                     Spacer(modifier = Modifier.height(24.dp))
@@ -43,9 +46,9 @@ fun App() {
                         onClick = { currentScreen = "dashboard" },
                         icon = { Icon(Icons.Default.Dashboard, contentDescription = null) },
                         colors = NavigationRailItemDefaults.colors(
-                            selectedIconColor = Color(0XFF1e222a),
-                            unselectedIconColor = Color(0XFF61afef),
-                            indicatorColor = Color(0XFFde6d7c)
+                            selectedIconColor = MaterialTheme.colorScheme.background,
+                            unselectedIconColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.secondary
                         )
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -54,9 +57,9 @@ fun App() {
                         onClick = { currentScreen = "browsers" },
                         icon = { Icon(Icons.Default.Language, contentDescription = null) },
                         colors = NavigationRailItemDefaults.colors(
-                            selectedIconColor = Color(0XFF1e222a),
-                            unselectedIconColor = Color(0XFF61afef),
-                            indicatorColor = Color(0XFFde6d7c)
+                            selectedIconColor = MaterialTheme.colorScheme.background,
+                            unselectedIconColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.secondary
                         )
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -65,9 +68,9 @@ fun App() {
                         onClick = { currentScreen = "accounts" },
                         icon = { Icon(Icons.Default.People, contentDescription = null) },
                         colors = NavigationRailItemDefaults.colors(
-                            selectedIconColor = Color(0XFF1e222a),
-                            unselectedIconColor = Color(0XFF61afef),
-                            indicatorColor = Color(0XFFde6d7c)
+                            selectedIconColor = MaterialTheme.colorScheme.background,
+                            unselectedIconColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.secondary
                         )
                     )
                 }
@@ -75,8 +78,8 @@ fun App() {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     when (currentScreen) {
                         "dashboard" -> DashboardScreen(dashboardViewModel)
-                        "browsers" -> Text("Browser List Screen", modifier = Modifier.padding(24.dp), color = Color(0XFFde6d7c))
-                        "accounts" -> Text("Account List Screen", modifier = Modifier.padding(24.dp), color = Color(0XFF61afef))
+                        "browsers" -> BrowserScreen(browserViewModel)
+                        "accounts" -> Text("Account List Screen", modifier = Modifier.padding(24.dp), color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }

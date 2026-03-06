@@ -10,14 +10,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun Card(title: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    ElevatedCard(modifier = modifier, colors = CardDefaults.elevatedCardColors(containerColor = Color(0XFF292e36))) {
+    ElevatedCard(modifier = modifier, colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text(text = title, style = MaterialTheme.typography.labelLarge, color = Color(0XFF61afef))
+            Text(text = title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(8.dp))
             content()
         }

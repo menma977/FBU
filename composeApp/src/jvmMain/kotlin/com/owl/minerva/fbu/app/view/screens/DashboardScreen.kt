@@ -6,7 +6,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.owl.minerva.fbu.app.view.components.Card
 import com.owl.minerva.fbu.app.view.models.DashboardViewModel
@@ -21,7 +20,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
         Text(
             text = "Dashboard",
             style = MaterialTheme.typography.headlineLarge,
-            color = Color(0XFFde6d7c)
+            color = MaterialTheme.colorScheme.secondary
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -31,7 +30,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                 Text(
                     text = "${viewModel.accountCount}",
                     style = MaterialTheme.typography.displayMedium,
-                    color = Color(0XFFde6d7c)
+                    color = MaterialTheme.colorScheme.secondary
                 )
             }
 
@@ -39,7 +38,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                 Text(
                     text = "${viewModel.browserCount}",
                     style = MaterialTheme.typography.displayMedium,
-                    color = Color(0XFFde6d7c)
+                    color = MaterialTheme.colorScheme.secondary
                 )
             }
         }

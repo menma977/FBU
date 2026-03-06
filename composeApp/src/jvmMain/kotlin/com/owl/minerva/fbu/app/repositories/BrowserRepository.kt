@@ -3,6 +3,8 @@ package com.owl.minerva.fbu.app.repositories
 import com.owl.minerva.fbu.app.entities.BrowserEntity
 import com.owl.minerva.fbu.app.models.Browser
 import com.owl.minerva.fbu.cores.interfaces.RepositoryInterface
+import com.owl.minerva.fbu.migrations.BrowserMigration
+import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class BrowserRepository : RepositoryInterface<Browser> {
@@ -21,10 +23,11 @@ class BrowserRepository : RepositoryInterface<Browser> {
     }
 
     override suspend fun insert(model: Browser): Long = newSuspendedTransaction {
-        BrowserEntity.new {
-            this.name = model.name
-            this.path = model.path
-        }.id.value
+        val generatedId = BrowserMigration.insertAndGetId {
+            it[name] = model.name
+            it[path] = model.path
+        }
+        generatedId.value
     }
 
     override suspend fun update(id: Long, model: Browser): Boolean = newSuspendedTransaction {
