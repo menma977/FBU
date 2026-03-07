@@ -30,7 +30,6 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -57,7 +56,6 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // System Status / Installation Area
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.elevatedCardColors(
@@ -101,9 +99,9 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
                                 .background(MaterialTheme.colorScheme.surface)
                                 .padding(8.dp)
                         ) {
-                            val scrollState = rememberScrollState()
+                            val logScrollState = rememberScrollState()
                             LaunchedEffect(viewModel.installationLogs) {
-                                scrollState.animateScrollTo(scrollState.maxValue)
+                                logScrollState.animateScrollTo(logScrollState.maxValue)
                             }
                             Text(
                                 text = viewModel.installationLogs,
@@ -111,7 +109,7 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
                                     fontFamily = FontFamily.Monospace,
                                     fontSize = 10.sp
                                 ),
-                                modifier = Modifier.verticalScroll(scrollState)
+                                modifier = Modifier.verticalScroll(logScrollState)
                             )
                         }
                     }
@@ -120,12 +118,11 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Browser List
             if (viewModel.isLoading && viewModel.browsers.isEmpty()) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    items(viewModel.browsers) { browserModel: Browser ->
+                    items(viewModel.browsers) { currentBrowserProfile: Browser ->
                         ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.elevatedCardColors(
@@ -139,13 +136,13 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = browserModel.name,
+                                        text = currentBrowserProfile.name,
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "Path: ${browserModel.path}",
+                                        text = "Path: ${currentBrowserProfile.path}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.secondary
                                     )
@@ -153,7 +150,7 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
 
                                 Row {
                                     IconButton(
-                                        onClick = { viewModel.openBrowser(browserModel) },
+                                        onClick = { viewModel.openBrowser(currentBrowserProfile) },
                                         enabled = viewModel.isBrowserInstalled && !viewModel.isLaunchingInProgress
                                     ) {
                                         if (viewModel.isLaunchingInProgress) {
@@ -167,7 +164,7 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
                                         }
                                     }
 
-                                    IconButton(onClick = { viewModel.deleteBrowser(browserModel.id) }) {
+                                    IconButton(onClick = { viewModel.deleteBrowser(currentBrowserProfile.id) }) {
                                         Icon(
                                             Icons.Default.Delete,
                                             contentDescription = "Delete Browser",
@@ -182,7 +179,6 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
             }
         }
 
-        // Add Dialog
         if (viewModel.isAddDialogOpen) {
             AlertDialog(
                 onDismissRequest = { viewModel.isAddDialogOpen = false },
@@ -190,7 +186,7 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
                 text = {
                     OutlinedTextField(
                         value = viewModel.newBrowserName,
-                        onValueChange = { viewModel.newBrowserName = it },
+                        onValueChange = { updatedName -> viewModel.newBrowserName = updatedName },
                         label = { Text("Browser Name", color = MaterialTheme.colorScheme.secondary) },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -227,7 +223,6 @@ fun BrowserScreen(viewModel: BrowserViewModel) {
             )
         }
         
-        // Error Dialog
         if (viewModel.errorMessage != null) {
             AlertDialog(
                 onDismissRequest = { viewModel.errorMessage = null },

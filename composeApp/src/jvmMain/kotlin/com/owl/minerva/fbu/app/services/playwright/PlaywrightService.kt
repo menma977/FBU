@@ -28,6 +28,26 @@ class PlaywrightService : PlaywrightServiceInterface {
         System.setProperty("playwright.browsers.path", masterBinariesPath)
     }
 
+    suspend fun launchBrowserProfileManual(browserProfile: Browser): Unit = withContext(Dispatchers.IO) {
+        val executablePath = findChromiumExecutable(browserProfile.path)
+            ?: throw IllegalStateException("Chromium executable isn't found in profile directory: ${browserProfile.path}")
+
+        val processArguments = mutableListOf<String>()
+        processArguments.add(executablePath.toString())
+        processArguments.add("--user-data-dir=${browserProfile.path}")
+        processArguments.add("--no-first-run")
+        processArguments.add("--no-default-browser-check")
+        processArguments.add("https://www.facebook.com")
+
+        val nativeBrowserProcessBuilder = ProcessBuilder(processArguments)
+        try {
+            nativeBrowserProcessBuilder.start()
+        } catch (processLaunchException: Exception) {
+            processLaunchException.printStackTrace()
+            throw processLaunchException
+        }
+    }
+
     override suspend fun launchBrowserProfile(browserProfile: Browser): Unit = withContext(Dispatchers.IO) {
         if (isSessionRunning) {
             terminateSession()
@@ -40,28 +60,59 @@ class PlaywrightService : PlaywrightServiceInterface {
 
             val persistentLaunchOptions: BrowserType.LaunchPersistentContextOptions = BrowserType.LaunchPersistentContextOptions()
                 .setHeadless(false)
+                .setIgnoreDefaultArgs(listOf("--enable-automation", "--no-sandbox"))
+                .setArgs(listOf("--disable-blink-features=AutomationControlled", "--no-first-run"))
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36")
 
             if (localExecutablePath != null) {
                 persistentLaunchOptions.setExecutablePath(localExecutablePath)
             } else {
-                throw IllegalStateException("Chromium executable isn't found in profile directory: ${browserProfile.path}. Please ensure the browser is installed and the profile was created correctly.")
+                throw IllegalStateException("Chromium executable isn't found in profile directory: ${browserProfile.path}")
             }
 
             val userDataDirectoryPath = Paths.get(browserProfile.path)
             activeBrowserContext = playwrightInstance!!.chromium().launchPersistentContext(userDataDirectoryPath, persistentLaunchOptions)
 
-            val initialPage = if (activeBrowserContext!!.pages().isEmpty()) {
+            val stealthInitializationScript = """
+                () => {
+                    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en', 'id-ID', 'id'] });
+                    Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
+                    Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });
+                    
+                    if (window.WebGLRenderingContext) {
+                        const webglCanvas = document.createElement('canvas');
+                        const webglContext = webglCanvas.getContext('webgl');
+                        if (webglContext) {
+                            const webglDebugInfo = webglContext.getExtension('WEBGL_debug_renderer_info');
+                            if (webglDebugInfo) {
+                                const originalGetParameter = WebGLRenderingContext.prototype.getParameter;
+                                WebGLRenderingContext.prototype.getParameter = function(parameter) {
+                                    if (parameter === webglDebugInfo.UNMASKED_VENDOR_WEBGL) return 'Intel Inc.';
+                                    if (parameter === webglDebugInfo.UNMASKED_RENDERER_WEBGL) return 'Intel(R) UHD Graphics 620';
+                                    return originalGetParameter.apply(this, arguments);
+                                };
+                            }
+                        }
+                    }
+                }
+            """.trimIndent()
+            activeBrowserContext!!.addInitScript(stealthInitializationScript)
+
+            val currentPages = activeBrowserContext!!.pages()
+            val initialPage = if (currentPages.isEmpty()) {
                 activeBrowserContext!!.newPage()
             } else {
-                activeBrowserContext!!.pages()[0]
+                currentPages[0]
             }
 
             initialPage.navigate("https://www.facebook.com")
 
-            isSessionRunning = true        } catch (exception: Exception) {
-            exception.printStackTrace()
+            isSessionRunning = true
+        } catch (launchException: Exception) {
+            launchException.printStackTrace()
             terminateSession()
-            throw exception
+            throw launchException
         }
     }
 
@@ -69,27 +120,31 @@ class PlaywrightService : PlaywrightServiceInterface {
         val profileDirectory = Paths.get(profilePath)
         if (!Files.exists(profileDirectory)) return null
 
-        val searchPattern = if (System.getProperty("os.name").lowercase().contains("win")) "chrome.exe" else "chrome"
+        val platformSearchPattern = if (System.getProperty("os.name").lowercase().contains("win")) "chrome.exe" else "chrome"
 
         try {
-            Files.walk(profileDirectory).use { stream ->
-                return stream
-                    .filter { Files.isRegularFile(it) }
-                    .filter { it.fileName.toString() == searchPattern }
-                    .findFirst()
-                    .orElse(null)
+            Files.walk(profileDirectory).use { directoryWalkStream ->
+                return directoryStreamToPath(directoryWalkStream, platformSearchPattern)
             }
         } catch (_: Exception) {
             return null
         }
     }
 
+    private fun directoryStreamToPath(stream: java.util.stream.Stream<Path>, pattern: String): Path? {
+        return stream
+            .filter { fileEntry -> Files.isRegularFile(fileEntry) }
+            .filter { fileEntry -> fileEntry.fileName.toString() == pattern }
+            .findFirst()
+            .orElse(null)
+    }
+
     override suspend fun terminateSession(): Unit = withContext(Dispatchers.IO) {
         try {
             activeBrowserContext?.close()
             playwrightInstance?.close()
-        } catch (exception: Exception) {
-            exception.printStackTrace()
+        } catch (terminationException: Exception) {
+            terminationException.printStackTrace()
         } finally {
             activeBrowserContext = null
             playwrightInstance = null
@@ -106,7 +161,7 @@ class PlaywrightService : PlaywrightServiceInterface {
         if (!Files.exists(rootBinariesPath)) return@withContext false
 
         val directoryStream = Files.newDirectoryStream(rootBinariesPath)
-        val chromiumDirectoryExists = directoryStream.any { it.fileName.toString().startsWith("chromium-") }
+        val chromiumDirectoryExists = directoryStream.any { directoryItem -> directoryItem.fileName.toString().startsWith("chromium-") }
         directoryStream.close()
         chromiumDirectoryExists
     }
@@ -131,14 +186,14 @@ class PlaywrightService : PlaywrightServiceInterface {
             val processOutputReader = BufferedReader(InputStreamReader(runningInstallationProcess.inputStream))
 
             var outputLine: String?
-            while (processOutputReader.readLine().also { outputLine = it } != null) {
+            while (processOutputReader.readLine().also { receivedLine -> outputLine = receivedLine } != null) {
                 onProgressLogReceived(outputLine!!)
             }
 
             runningInstallationProcess.waitFor()
-        } catch (exception: Exception) {
-            onProgressLogReceived("Error during installation: ${exception.message}")
-            exception.printStackTrace()
+        } catch (installationException: Exception) {
+            onProgressLogReceived("Error during installation: ${installationException.message}")
+            installationException.printStackTrace()
         }
     }
 
@@ -149,30 +204,29 @@ class PlaywrightService : PlaywrightServiceInterface {
         if (!Files.exists(sourcePath)) return@withContext
 
         try {
-            Files.walk(sourcePath).use { stream ->
-                for (sourceFile in stream.collect(Collectors.toList())) {
-                    val relativePath = sourcePath.relativize(sourceFile)
-                    val destinationFile = targetPath.resolve(relativePath)
+            val sourceFilesList = Files.walk(sourcePath).use { stream -> stream.collect(Collectors.toList()) }
+            for (sourceFile in sourceFilesList) {
+                val relativePath = sourcePath.relativize(sourceFile)
+                val destinationFile = targetPath.resolve(relativePath)
 
-                    if (Files.isDirectory(sourceFile)) {
-                        if (!Files.exists(destinationFile)) {
-                            Files.createDirectories(destinationFile)
-                        }
-                    } else {
-                        Files.copy(sourceFile, destinationFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES)
+                if (Files.isDirectory(sourceFile)) {
+                    if (!Files.exists(destinationFile)) {
+                        Files.createDirectories(destinationFile)
+                    }
+                } else {
+                    Files.copy(sourceFile, destinationFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES)
 
-                        if (!System.getProperty("os.name").lowercase().contains("win")) {
-                            if (Files.isExecutable(sourceFile)) {
-                                val permissions = Files.getPosixFilePermissions(sourceFile)
-                                Files.setPosixFilePermissions(destinationFile, permissions)
-                            }
+                    if (!System.getProperty("os.name").lowercase().contains("win")) {
+                        if (Files.isExecutable(sourceFile)) {
+                            val filePermissions = Files.getPosixFilePermissions(sourceFile)
+                            Files.setPosixFilePermissions(destinationFile, filePermissions)
                         }
                     }
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
+        } catch (copyException: Exception) {
+            copyException.printStackTrace()
+            throw copyException
         }
     }
 
@@ -183,7 +237,12 @@ class PlaywrightService : PlaywrightServiceInterface {
         for (currentBrowserProfile: Browser in browserProfiles) {
             try {
                 this.launchBrowserProfile(currentBrowserProfile)
-                automationTask.execute(currentBrowserProfile)
+                
+                val currentPagesList = activeBrowserContext?.pages()
+                if (currentPagesList != null && currentPagesList.isNotEmpty()) {
+                    val activePageInstance = currentPagesList[0]
+                    automationTask.execute(currentBrowserProfile, activePageInstance)
+                }
             } finally {
                 this.terminateSession()
             }

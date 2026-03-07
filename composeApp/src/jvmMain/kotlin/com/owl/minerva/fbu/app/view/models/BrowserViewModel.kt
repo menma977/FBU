@@ -70,8 +70,8 @@ class BrowserViewModel(
 
             try {
                 playwrightService.copyMasterToProfile(successfullyStoredBrowser.path)
-            } catch (exception: Exception) {
-                errorMessage = "Failed to copy browser files: ${exception.message}"
+            } catch (copyFilesException: Exception) {
+                errorMessage = "Failed to copy browser files: ${copyFilesException.message}"
             }
 
             browsers = browserService.index()
@@ -86,9 +86,9 @@ class BrowserViewModel(
         applicationCoroutineScope.launch {
             isLaunchingInProgress = true
             try {
-                playwrightService.launchBrowserProfile(targetBrowser)
-            } catch (exception: Exception) {
-                errorMessage = "Failed to launch browser: ${exception.message}"
+                playwrightService.launchBrowserProfileManual(targetBrowser)
+            } catch (browserLaunchException: Exception) {
+                errorMessage = "Failed to launch browser: ${browserLaunchException.message}"
             } finally {
                 isLaunchingInProgress = false
             }
