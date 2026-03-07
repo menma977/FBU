@@ -10,23 +10,43 @@ object AppDirectory {
         } else {
             System.getProperty("user.home")
         }
-        
-        val appStorageDirectory: File = File(userHomeDirectory, ".fbu")
-        
+
+        val appStorageDirectory = File(userHomeDirectory, ".fbu")
+
         if (!appStorageDirectory.exists()) {
             appStorageDirectory.mkdirs()
         }
-        
+
         return appStorageDirectory
     }
 
     fun getProfilesDirectory(): File {
-        val profilesDirectory: File = File(getAppStorageDirectory(), "profiles")
-        
+        val profilesDirectory = File(getAppStorageDirectory(), "profiles")
+
         if (!profilesDirectory.exists()) {
             profilesDirectory.mkdirs()
         }
-        
+
         return profilesDirectory
+    }
+
+    fun getBrowserBinaryDirectory(): File {
+        val binDirectory = File(getAppStorageDirectory(), "bin")
+
+        if (!binDirectory.exists()) {
+            binDirectory.mkdirs()
+        }
+
+        return binDirectory
+    }
+
+    fun getMasterBrowserDirectory(): File {
+        val masterDirectory = File(getBrowserBinaryDirectory(), "master")
+
+        if (!masterDirectory.exists()) {
+            masterDirectory.mkdirs()
+        }
+
+        return masterDirectory
     }
 }

@@ -9,7 +9,7 @@ import java.util.UUID
 
 class BrowserService(browserRepository: BrowserRepository) : ServiceAbstract<Browser>(browserRepository) {
 
-    override suspend fun store(model: Browser): Long {
+    suspend fun storeAndGet(model: Browser): Browser {
         val profilesDirectory: File = AppDirectory.getProfilesDirectory()
         val browserProfileIdentifier: String = UUID.randomUUID().toString()
         val allocatedProfileFolder: File = File(profilesDirectory, browserProfileIdentifier)
@@ -19,8 +19,9 @@ class BrowserService(browserRepository: BrowserRepository) : ServiceAbstract<Bro
         }
 
         val configuredBrowserModel: Browser = model.copy(path = allocatedProfileFolder.absolutePath)
+        val id = super.store(configuredBrowserModel)
         
-        return super.store(configuredBrowserModel)
+        return configuredBrowserModel.copy(id = id)
     }
 
     override suspend fun delete(id: Long): Boolean {

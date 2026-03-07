@@ -13,6 +13,7 @@ import com.owl.minerva.fbu.app.repositories.AccountRepository
 import com.owl.minerva.fbu.app.repositories.BrowserRepository
 import com.owl.minerva.fbu.app.services.AccountService
 import com.owl.minerva.fbu.app.services.BrowserService
+import com.owl.minerva.fbu.app.services.playwright.PlaywrightService
 import com.owl.minerva.fbu.app.view.models.BrowserViewModel
 import com.owl.minerva.fbu.app.view.models.DashboardViewModel
 import com.owl.minerva.fbu.app.view.screens.DashboardScreen
@@ -25,8 +26,9 @@ fun App() {
     val accountRepo = remember { AccountRepository() }
     val browserService = remember { BrowserService(browserRepo) }
     val accountService = remember { AccountService(accountRepo, browserService) }
-    val dashboardViewModel = remember { DashboardViewModel(browserService, accountService) }
-    val browserViewModel = remember { BrowserViewModel(browserService) }
+    val playwrightService = remember { PlaywrightService() }
+    val dashboardViewModel = remember { DashboardViewModel(browserService, accountService, playwrightService) }
+    val browserViewModel = remember { BrowserViewModel(browserService, playwrightService) }
 
     var currentScreen by remember { mutableStateOf("dashboard") }
 
