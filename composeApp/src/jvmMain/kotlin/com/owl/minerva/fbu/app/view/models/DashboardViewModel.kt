@@ -53,7 +53,9 @@ class DashboardViewModel(
             val task = object : AutomationTaskInterface {
                 override suspend fun execute(browserProfile: Browser) {
                     println("Running task '$title' on browser ${browserProfile.name}")
-                    // Implement further automation execution steps using description & imagePaths here
+                    println("Description: $description")
+                    println("Images to process: ${imagePaths.joinToString(", ")}")
+                    // Automation logic will be expanded here using these values
                 }
             }
             playwrightService.runProfilesSequentially(browsers, task)
