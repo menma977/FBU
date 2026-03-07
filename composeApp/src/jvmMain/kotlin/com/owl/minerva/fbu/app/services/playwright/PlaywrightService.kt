@@ -50,12 +50,15 @@ class PlaywrightService : PlaywrightServiceInterface {
             val userDataDirectoryPath = Paths.get(browserProfile.path)
             activeBrowserContext = playwrightInstance!!.chromium().launchPersistentContext(userDataDirectoryPath, persistentLaunchOptions)
 
-            if (activeBrowserContext!!.pages().isEmpty()) {
+            val initialPage = if (activeBrowserContext!!.pages().isEmpty()) {
                 activeBrowserContext!!.newPage()
+            } else {
+                activeBrowserContext!!.pages()[0]
             }
 
-            isSessionRunning = true
-        } catch (exception: Exception) {
+            initialPage.navigate("https://www.facebook.com")
+
+            isSessionRunning = true        } catch (exception: Exception) {
             exception.printStackTrace()
             terminateSession()
             throw exception
