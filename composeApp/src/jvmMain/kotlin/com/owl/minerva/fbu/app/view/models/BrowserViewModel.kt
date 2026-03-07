@@ -55,7 +55,7 @@ class BrowserViewModel(
 
     fun addBrowser() {
         if (newBrowserName.isBlank()) return
-        
+
         if (!isBrowserInstalled) {
             errorMessage = "Please install the browser binary first."
             return
@@ -64,16 +64,16 @@ class BrowserViewModel(
         applicationCoroutineScope.launch {
             isLoading = true
             isCopyingInProgress = true
-            
-            val pendingBrowserModel: Browser = Browser(name = newBrowserName, path = "")
+
+            val pendingBrowserModel = Browser(name = newBrowserName, path = "")
             val successfullyStoredBrowser = browserService.storeAndGet(pendingBrowserModel)
-            
+
             try {
                 playwrightService.copyMasterToProfile(successfullyStoredBrowser.path)
             } catch (exception: Exception) {
                 errorMessage = "Failed to copy browser files: ${exception.message}"
             }
-            
+
             browsers = browserService.index()
             isAddDialogOpen = false
             newBrowserName = ""
